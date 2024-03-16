@@ -12,6 +12,7 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
+  int attempTs = 0;
   Timer? timer;
   static const maxSeconds = 30;
   int seconds = maxSeconds;
@@ -20,16 +21,20 @@ class _GameScreenState extends State<GameScreen> {
   int xScore = 0;
   int filledBoxes = 0;
   String resultDeclaration = '';
+  List<int> matchIndexes = [];
   bool oTurn = true;
   List<String> displayXO = ['', '', '', '', '', '', '', '', ''];
   void startTimer() {
-    timer = Timer.periodic(const Duration(seconds: 1), (_) {});
-    if (seconds > 0) {
-      seconds--;
-    } else {
-      resetTimer();
-      sTopTimer();
-    }
+    timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() {
+        if (seconds > 0) {
+          seconds--;
+        } else {
+          resetTimer();
+          sTopTimer();
+        }
+      });
+    });
   }
 
   void sTopTimer() {
@@ -129,7 +134,9 @@ class _GameScreenState extends State<GameScreen> {
                               width: 5,
                               color: MainColors.primaryColor,
                             ),
-                            color: MainColors.secondaryColor,
+                            color: matchIndexes.contains(index)
+                                ? MainColors.accentColor
+                                : MainColors.secondaryColor,
                           ),
                           child: Center(
                               child: Text(displayXO[index],
@@ -157,16 +164,7 @@ class _GameScreenState extends State<GameScreen> {
                     const SizedBox(
                       height: 12,
                     ),
-                    ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 32, vertical: 16),
-                        ),
-                        onPressed: () {
-                          _clearBoard();
-                        },
-                        child: const Text('Play Again'))
+                    _buildTimer(),
                   ],
                 )),
           ],
@@ -175,18 +173,65 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  Widget _buildTimer() {
+    final isRunning = timer == null ? false : timer!.isActive;
+    return isRunning
+        ? SizedBox(
+            height: 80,
+            width: 80,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CircularProgressIndicator(
+                  value: 1 - seconds / maxSeconds,
+                  valueColor: const AlwaysStoppedAnimation(Colors.white),
+                  strokeWidth: 8,
+                  backgroundColor: MainColors.accentColor,
+                ),
+                Center(
+                  child: Text(
+                    '$seconds',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 30,
+                    ),
+                  ),
+                )
+              ],
+            ),
+          )
+        : ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            ),
+            onPressed: () {
+              startTimer();
+              _clearBoard();
+              matchIndexes.clear();
+              attempTs++;
+            },
+            child: Text(attempTs == 0 ? 'Start' : 'Play Again'),
+          );
+  }
+
   void _ontapped(int index) {
-    setState(() {
-      if (oTurn && displayXO[index] == '') {
-        displayXO[index] = 'O';
-        filledBoxes++;
-      } else if (oTurn == false && displayXO[index] == '') {
-        displayXO[index] = 'X';
-        filledBoxes++;
-      }
-      oTurn = !oTurn;
-      _checkWinner();
-    });
+    final isRunning = timer == null ? false : timer!.isActive;
+
+    if (isRunning) {
+      setState(() {
+        if (oTurn && displayXO[index] == '') {
+          displayXO[index] = 'O';
+          filledBoxes++;
+        } else if (oTurn == false && displayXO[index] == '') {
+          displayXO[index] = 'X';
+          filledBoxes++;
+        }
+        oTurn = !oTurn;
+        _checkWinner();
+      });
+    }
   }
 
   void _clearBoard() {
@@ -215,6 +260,8 @@ class _GameScreenState extends State<GameScreen> {
         displayXO[0] == displayXO[2]) {
       setState(() {
         resultDeclaration = 'Player ${displayXO[0]} wins!';
+        matchIndexes.addAll([0, 1, 2]);
+        sTopTimer();
         checkScore(displayXO[0]);
       });
     } else if
@@ -224,6 +271,8 @@ class _GameScreenState extends State<GameScreen> {
             displayXO[3] == displayXO[5]) {
       setState(() {
         resultDeclaration = 'Player ${displayXO[3]} wins!';
+        matchIndexes.addAll([3, 4, 5]);
+        sTopTimer();
         checkScore(displayXO[3]);
       });
     } else if
@@ -233,6 +282,8 @@ class _GameScreenState extends State<GameScreen> {
             displayXO[6] == displayXO[8]) {
       setState(() {
         resultDeclaration = 'Player ${displayXO[6]} wins!';
+        matchIndexes.addAll([6, 7, 8]);
+        sTopTimer();
         checkScore(displayXO[6]);
       });
     } else if
@@ -242,6 +293,8 @@ class _GameScreenState extends State<GameScreen> {
             displayXO[0] == displayXO[6]) {
       setState(() {
         resultDeclaration = 'Player ${displayXO[0]} wins!';
+        matchIndexes.addAll([0, 3, 6]);
+        sTopTimer();
         checkScore(displayXO[0]);
       });
     } else if
@@ -252,6 +305,8 @@ class _GameScreenState extends State<GameScreen> {
             displayXO[1] == displayXO[7]) {
       setState(() {
         resultDeclaration = 'Player ${displayXO[1]} wins!';
+        matchIndexes.addAll([1, 4, 7]);
+        sTopTimer();
         checkScore(displayXO[1]);
       });
     } else if
@@ -261,6 +316,8 @@ class _GameScreenState extends State<GameScreen> {
             displayXO[2] == displayXO[8]) {
       setState(() {
         resultDeclaration = 'Player ${displayXO[2]} wins!';
+        matchIndexes.addAll([2, 5, 8]);
+        sTopTimer();
         checkScore(displayXO[2]);
       });
     } else if
@@ -270,6 +327,8 @@ class _GameScreenState extends State<GameScreen> {
             displayXO[0] == displayXO[8]) {
       setState(() {
         resultDeclaration = 'Player ${displayXO[0]} wins!';
+        matchIndexes.addAll([0, 4, 8]);
+        sTopTimer();
         checkScore(displayXO[0]);
       });
     } else if
@@ -279,11 +338,14 @@ class _GameScreenState extends State<GameScreen> {
             displayXO[2] == displayXO[6]) {
       setState(() {
         resultDeclaration = 'Player ${displayXO[2]} wins!';
+        matchIndexes.addAll([2, 4, 6]);
+        sTopTimer();
         checkScore(displayXO[2]);
       });
     } else if (!winnerFound && filledBoxes == 9) {
       setState(() {
         resultDeclaration = 'Nobody won!';
+        sTopTimer();
       });
     }
   }
